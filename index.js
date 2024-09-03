@@ -1,45 +1,70 @@
-const express = require('express');
+const express = require("express");
+const dotenv = require("dotenv").config();
+const cors = require("cors");
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const publicRoute = require("./Route/PublicRouter/publicRoute");
+const privateRoute = require("./Route/PrivateRouter/privateRoute");
+const admin = require("./Route/Admin/admin");
+const customer = require("./Route/Customer/customer");
+
 const app = express();
-const dotenv = require('dotenv').config();
-const cors = require('cors');
-const mongoose = require('mongoose');
 const port = process.env.PORT || 5000;
-const handleroute = require("./routes/handleroute")
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 
 // Connect to MongoDB
-mongoose.connect(process.env.DATABASE_URl, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.log('Failed to connect to MongoDB', err));
+const uri = process.env.DATABASE_URL; 
 
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
 
-//route
+async function run() {
+  try {
+    // Connect the client to the server
+    // await client.connect();
+    
+    // Attach the database to app.locals
+    app.locals.db = client.db("Jesha"); 
+    
+    // Routes
+    app.use("/public", publicRoute);
+    app.use("/private", privateRoute);
+    app.use("/admin", admin);
+    app.use("/customer", customer);
 
-app.use('/data', handleroute)
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
-//error handler
-function errorHandler(err, req, res, next) {  
-  if (res.headersSent) {  
-    return next(err);  
-  } else {
-    res.status(500).json({ error: err.message || 'An unexpected error occurred' });
+    // Start the server
+    app.listen(port, () => {
+      console.log(`App listening on port ${port}`);
+    });
+  } catch (err) {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
   }
-};
+}
 
+// Run the MongoDB connection function
+run().catch(console.dir);
 
-
-// Routes
-app.get('/', (req, res) => {
-  res.send('Hello Jesha Shop!');
+app.get("/", (req, res) => {
+  res.send("Hello Jesha Shop!");
 });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+// Error handler
+function errorHandler(err, req, res, next) {
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(500).json({ error: err.message || "An unexpected error occurred" });
+}
+
+app.use(errorHandler);

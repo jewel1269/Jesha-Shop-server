@@ -83,10 +83,6 @@ publicRouter.get('/electronics/:id', async (req, res) => {
 });
 
 
-
-
-
-
 // PATCH request
 publicRouter.patch('/', async (req, res) => {
   res.send("PATCH");

@@ -6,6 +6,7 @@ const publicRoute = require("./Route/PublicRouter/publicRoute");
 const privateRoute = require("./Route/PrivateRouter/privateRoute");
 const admin = require("./Route/Admin/admin");
 const customer = require("./Route/Customer/customer");
+const mycart = require("./Route/MyCart/mycart")
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -31,7 +32,7 @@ async function run() {
     // Connect the client to the server
     // await client.connect();
     
-    // Attach the database to app.locals
+    // Attach the database to app.locals 
     app.locals.db = client.db("Jesha"); 
     
     // Routes
@@ -39,6 +40,7 @@ async function run() {
     app.use("/private", privateRoute);
     app.use("/admin", admin);
     app.use("/customer", customer);
+    app.use("/cart", mycart);
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 

@@ -31,7 +31,7 @@ mycart.post('/', async (req, res) => {
 });
 
 
-// DELETE request to remove an item from the cart
+//get with email
 mycart.get('/:email', async (req, res) => {
   try {
     const cartsCollection = req.app.locals.db.collection("mycart");
@@ -53,6 +53,28 @@ mycart.get('/:email', async (req, res) => {
       error: 'Failed to fetch cart items',
       details: error.message
     });
+  }
+});
+
+// DELETE request to remove an item from the cart
+mycart.delete("/:id", async (req, res) => {
+  try {
+    const cartsCollection = req.app.locals.db.collection("mycart");
+    const id = req.params.id; 
+    console.log(id);
+
+    const filter = { _id: new ObjectId(id) }; 
+    const result = await cartsCollection.deleteOne(filter); 
+    
+    // Check if an item was deleted
+    if (result.deletedCount === 1) {
+      res.status(200).send({ message: "Item deleted successfully" });
+    } else {
+      res.status(404).send({ message: "Item not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting item:", error);
+    res.status(500).send({ error: "Internal Server Error" });
   }
 });
 

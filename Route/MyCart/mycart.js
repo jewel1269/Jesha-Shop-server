@@ -9,26 +9,52 @@ mycart.use((req, res, next) => {
 });
 
 // POST request to add an item to the cart
+
 mycart.post('/', async (req, res) => {
   try {
     const cartsCollection = req.app.locals.db.collection("mycart");
-    const item = req.body;
-    console.log(item, "item");
-    const result = await cartsCollection.insertOne(item);
-    res.status(201).json({
-      message: 'Item successfully added to cart',
-      insertedId: result.insertedId
-    });
-  } catch (error) {
-    console.error('Error adding to cart:', error);
+    const { item } = req.body; // Assuming item contains product details
 
-    // Error response
+    if (!item || !item._id) {
+      return res.status(400).json({ error: "Product with valid _id is required." });
+    }
+
+    // Check if the product is already in the cart
+    const existingItem = await cartsCollection.findOne({ "item._id": item._id });
+
+    if (existingItem) {
+      
+      const currentQuantity = existingItem.quantity || 0;
+      const newQuantity = currentQuantity + 1;
+      
+      await cartsCollection.updateOne(
+        { "item._id": item._id },
+        { $set: { Quantity: newQuantity } }
+      );
+      res.status(200).json({
+        message: 'Quantity updated successfully',
+        updatedQuantity: newQuantity
+      });
+    } else {
+      // If product doesn't exist, add it with quantity 0
+      const result = await cartsCollection.insertOne({
+        ...req.body,
+        Quantity: 0  // Set the initial quantity to 0
+      });
+      res.status(201).json({
+        message: 'Item successfully added to cart with quantity 0',
+        insertedId: result.insertedId
+      });
+    }
+  } catch (error) {
+    console.error('Error adding/updating cart:', error);
     res.status(500).json({
-      error: 'Failed to add item to cart',
+      error: 'Failed to add or update item in cart',
       details: error.message
     });
   }
 });
+
 
 
 //get with email

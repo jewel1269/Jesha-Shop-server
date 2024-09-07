@@ -83,6 +83,20 @@ publicRouter.get('/electronics/:id', async (req, res) => {
 });
 
 
+//get data from health collection
+publicRouter.get('/health', async (req, res) => {
+  try {
+    const healthCollection = req.app.locals.db.collection("health");
+    const result = await healthCollection.find().toArray();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch Electronics', details: error.message });
+  }
+});
+
+
+
+
 // PATCH request
 publicRouter.patch('/', async (req, res) => {
   res.send("PATCH");

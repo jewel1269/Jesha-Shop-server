@@ -24,7 +24,7 @@ mycart.post('/', async (req, res) => {
 
     if (existingItem) {
       
-      const currentQuantity = existingItem.quantity || 0;
+      const currentQuantity = existingItem.quantity || 1;
       const newQuantity = currentQuantity + 1;
       
       await cartsCollection.updateOne(
@@ -39,7 +39,7 @@ mycart.post('/', async (req, res) => {
       // If product doesn't exist, add it with quantity 0
       const result = await cartsCollection.insertOne({
         ...req.body,
-        Quantity: 0  // Set the initial quantity to 0
+        Quantity: 1  // Set the initial quantity to 0
       });
       res.status(201).json({
         message: 'Item successfully added to cart with quantity 0',
@@ -87,21 +87,48 @@ mycart.delete("/:id", async (req, res) => {
   try {
     const cartsCollection = req.app.locals.db.collection("mycart");
     const id = req.params.id; 
-    console.log(id);
+    console.log("Item ID:", id);
 
-    const filter = { _id: new ObjectId(id) }; 
-    const result = await cartsCollection.deleteOne(filter); 
+    // Ensure ID is valid before proceeding
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid ID format" });
+    }
+
+    const filter = { _id: new ObjectId(id) };
     
-    // Check if an item was deleted
-    if (result.deletedCount === 1) {
-      res.status(200).send({ message: "Item deleted successfully" });
+    // Find the item first to check its quantity
+    const item = await cartsCollection.findOne(filter);
+    
+    if (!item) {
+      return res.status(404).send({ message: "Item not found" });
+    }
+
+    if (item.Quantity > 1) {
+      // If quantity is greater than 1, decrement by 1
+      const updatedResult = await cartsCollection.updateOne(filter, {
+        $inc: { Quantity: -1 },
+      });
+
+      if (updatedResult.modifiedCount === 1) {
+        return res.status(200).send({ message: "Quantity reduced by 1" });
+      } else {
+        return res.status(500).send({ message: "Failed to update quantity" });
+      }
     } else {
-      res.status(404).send({ message: "Item not found" });
+      // If quantity is 1, delete the product
+      const deleteResult = await cartsCollection.deleteOne(filter);
+      
+      if (deleteResult.deletedCount === 1) {
+        return res.status(200).send({ message: "Item deleted successfully" });
+      } else {
+        return res.status(500).send({ message: "Failed to delete item" });
+      }
     }
   } catch (error) {
-    console.error("Error deleting item:", error);
-    res.status(500).send({ error: "Internal Server Error" });
+    console.error("Error handling item:", error);
+    return res.status(500).send({ error: "Internal Server Error" });
   }
 });
+
 
 module.exports = mycart;

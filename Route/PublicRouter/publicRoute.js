@@ -90,7 +90,7 @@ publicRouter.get('/beauty', async (req, res) => {
     const result = await beautyCollection.find().toArray();
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch Electronics', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch beauty', details: error.message });
   }
 });
 

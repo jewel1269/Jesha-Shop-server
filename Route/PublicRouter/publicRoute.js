@@ -84,6 +84,44 @@ publicRouter.get('/electronics/:id', async (req, res) => {
 
 
 //get data from health collection
+publicRouter.get('/beauty', async (req, res) => {
+  try {
+    const beautyCollection = req.app.locals.db.collection("beauty");
+    const result = await beautyCollection.find().toArray();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch Electronics', details: error.message });
+  }
+});
+
+
+//get data from health collection with id
+publicRouter.get('/beauty/:id', async (req, res) => {
+  try {
+    const beautyCollection = req.app.locals.db.collection("beauty");
+
+    const id = req.params.id;
+    console.log(id);
+
+    // _id ফিল্টারের জন্য ObjectId কনভার্ট করা
+    const filter = { _id: new ObjectId(id) };
+
+    const result = await beautyCollection.findOne(filter);
+    console.log(result);
+
+    if (result) {
+      res.status(200).json(result);
+    } else {
+      res.status(404).json({ error: 'Food not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch food', details: error.message });
+  }
+});
+
+
+
+//get data from health collection
 publicRouter.get('/health', async (req, res) => {
   try {
     const healthCollection = req.app.locals.db.collection("health");
@@ -118,6 +156,7 @@ publicRouter.get('/health/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch food', details: error.message });
   }
 });
+
 
 
 // PATCH request

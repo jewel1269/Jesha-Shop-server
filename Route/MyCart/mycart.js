@@ -24,25 +24,36 @@ mycart.post('/', async (req, res) => {
 
     if (existingItem) {
       
-      const currentQuantity = existingItem.quantity || 1;
-      const newQuantity = currentQuantity + 1;
+      const currentQuantity = existingItem.Quantity || 1;
       
-      await cartsCollection.updateOne(
-        { "item._id": item._id },
-        { $set: { Quantity: newQuantity } }
-      );
-      res.status(200).json({
-        message: 'Quantity updated successfully',
-        updatedQuantity: newQuantity
-      });
+      if (currentQuantity < 5) {
+        const newQuantity = currentQuantity + 1;
+        console.log(newQuantity, "Hello Quantity");
+
+        await cartsCollection.updateOne(
+          { "item._id": item._id },
+          { $set: { Quantity: newQuantity } }
+        );
+
+        res.status(200).json({
+          message: 'Quantity updated successfully',
+          updatedQuantity: newQuantity
+        });
+      } else {
+        // If the quantity is already 5, do not increment
+        res.status(400).json({
+          message: 'Maximum quantity reached. Cannot add more of this item.'
+        });
+      }
+      
     } else {
-      // If product doesn't exist, add it with quantity 0
+      // If product doesn't exist, add it with quantity 1
       const result = await cartsCollection.insertOne({
         ...req.body,
-        Quantity: 1  // Set the initial quantity to 0
+        Quantity: 1  
       });
       res.status(201).json({
-        message: 'Item successfully added to cart with quantity 0',
+        message: 'Item successfully added to cart with quantity 1',
         insertedId: result.insertedId
       });
     }

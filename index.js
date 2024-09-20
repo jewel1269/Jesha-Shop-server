@@ -61,6 +61,14 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     // Start the server
+    app.get('/favicon.png', (req, res) => {
+      res.status(204); 
+    });
+    
+    app.get('/favicon.ico', (req, res) => {
+      res.status(204); 
+    });
+    
    
   } catch (err) {
     console.error("MongoDB connection error:", err);
@@ -70,6 +78,8 @@ async function run() {
 
 // Run the MongoDB connection function
 run().catch(console.dir);
+
+
 
 app.get("/", (req, res) => {
   res.send("Hello Jesha Shop!");

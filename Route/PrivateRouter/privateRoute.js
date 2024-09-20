@@ -9,10 +9,10 @@ payment.use((req, res, next) => {
   next();
 });
 
-// Checkout endpoint
 payment.post("/checkout", async (req, res) => {
   try {
     const paymentCollections = req.app.locals.db.collection("payment");
+    const cartCollections = req.app.locals.db.collection("cart"); // Reference to cart collection
     const { item, user, total, address, deliveryMethod } = req.body;
 
     const trxId = new ObjectId().toString().toUpperCase().slice(0, 12); // Generate transaction ID
@@ -23,7 +23,7 @@ payment.post("/checkout", async (req, res) => {
       total_amount: total, 
       currency: "BDT", 
       tran_id: trxId,
-      success_url: "http://localhost:3000/paymentSuccess",  
+      success_url: "http://localhost:3000/paymentSuccess",  // Payment success route
       fail_url: "http://localhost:3000/paymentfail",           
       cancel_url: "http://localhost:5173/payment-cancel",    
       cus_name: user.displayName || "Customer Name", 
@@ -66,9 +66,10 @@ payment.post("/checkout", async (req, res) => {
       details: address,
       status: 'pending',
       Date: new Date(),
+      item: item,
       Invoice: {
         title: 'Jesha Shop.',
-        logo: 'https://i.ibb.co/17HLxck/download-removebg-preview.png', // Fixed the URL
+        logo: 'https://i.ibb.co/17HLxck/download-removebg-preview.png', 
         address: 'বাড়ি ৩, রোড ৯/বিনিকুঞ্জ-১, খিলক্ষেত ঢাকা ১২২৯, বাংলাদেশ',
         Status: "Pending", 
         PaymentMethod: deliveryMethod
@@ -90,37 +91,38 @@ payment.post("/checkout", async (req, res) => {
   }
 });
 
+
+
+
 // Success payment endpoint
-payment.post("/paymentSuccess", async (req, res) => {
+payment.get("/paymentSuccess", async (req, res) => {
   try {
     const paymentCollections = req.app.locals.db.collection("payment");
-    const successData = req.body;
+    const cartCollections = req.app.locals.db.collection("cart");
 
-    // Check if payment status is VALID
-    if (successData.status !== "VALID") {
-      return res.status(500).json({ error: "Internal Payment Error" });
-    }
+    const { tran_id } = req.query; // Get transaction ID from the success query
 
-    // Query the payment record based on transaction ID
-    const query = { paymentId: successData.tran_id };
-    const update = {
-      $set: { status: 'success' }
-    };
+    // Find the corresponding payment entry and update its status to 'success'
+    const payment = await paymentCollections.findOneAndUpdate(
+      { paymentId: tran_id }, 
+      { $set: { status: 'success' } }
+    );
 
-    // Update the payment status in the database
-    const updateResult = await paymentCollections.updateOne(query, update);
-    console.log(updateResult);
+    if (payment) {
+      // Delete the cart data for the user after successful payment
+      const cartDeletion = await cartCollections.deleteMany({ userId: payment.value.Customer_info.userId });
 
-    if (updateResult.modifiedCount === 1) {
-      // Redirect to the payment success page on the frontend
-      res.redirect("http://localhost:3000/paymentSuccess");
+      if (cartDeletion.deletedCount > 0) {
+        res.status(200).send("Payment successful and cart cleared");
+      } else {
+        res.status(200).send("Payment successful but cart was already empty");
+      }
     } else {
-      res.status(404).send("Payment record not found");
+      res.status(400).send("Payment record not found");
     }
-
   } catch (error) {
-    console.error("Payment update failed:", error);
-    res.status(500).send("Payment update failed");
+    console.error("Error in payment success:", error);
+    res.status(500).send("Payment success handling failed");
   }
 });
 

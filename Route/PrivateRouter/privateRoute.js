@@ -9,6 +9,7 @@ payment.use((req, res, next) => {
   next();
 });
 
+// POST request to initiate the payment process
 payment.post("/checkout", async (req, res) => {
   try {
     const paymentCollections = req.app.locals.db.collection("payment");
@@ -29,7 +30,7 @@ payment.post("/checkout", async (req, res) => {
       cus_name: user.displayName || "Customer Name", 
       cus_email: user.email || "cust@yahoo.com", 
       cus_add1: user.address || "Dhaka", 
-      cus_city: user.address || "Dhaka", 
+      cus_city: user.city || "Dhaka", 
       cus_state: user.state || "Dhaka", 
       cus_postcode: user.postcode || "1000", 
       cus_country: "Bangladesh",
@@ -91,9 +92,6 @@ payment.post("/checkout", async (req, res) => {
   }
 });
 
-
-
-
 // Success payment endpoint
 payment.get("/paymentSuccess", async (req, res) => {
   try {
@@ -105,10 +103,11 @@ payment.get("/paymentSuccess", async (req, res) => {
     // Find the corresponding payment entry and update its status to 'success'
     const payment = await paymentCollections.findOneAndUpdate(
       { paymentId: tran_id }, 
-      { $set: { status: 'success' } }
+      { $set: { status: 'success' } },
+      { returnOriginal: false } // Return the updated document
     );
 
-    if (payment) {
+    if (payment.value) {
       // Delete the cart data for the user after successful payment
       const cartDeletion = await cartCollections.deleteMany({ userId: payment.value.Customer_info.userId });
 
@@ -125,7 +124,5 @@ payment.get("/paymentSuccess", async (req, res) => {
     res.status(500).send("Payment success handling failed");
   }
 });
-
-
 
 module.exports = payment;
